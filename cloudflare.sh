@@ -195,7 +195,7 @@ if [ "$NGINX_ENABLED" -eq 1 ]; then
 
             cp -f "$BACKUP_DIR/$backupFile" "$NGINX_FILE"
 
-            log "[NGINX] Restored backup '$backupFile'. Testing again..."
+            log "[NGINX] Restored backup '$backupFile' to '$NGINX_FILE'. Testing again..."
 
             # Perform another test.
             nginx -t
@@ -210,6 +210,7 @@ if [ "$NGINX_ENABLED" -eq 1 ]; then
         # Check if we should reload NGINX.
         if [ "$NGINX_RELOAD" -eq 1 ]; then
             log "[NGINX] Reloading NGINX server..."
+            
             systemctl reload nginx
         fi
     fi
