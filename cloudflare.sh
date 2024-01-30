@@ -49,6 +49,19 @@ for i in `curl -s -L https://www.cloudflare.com/ips-v6`; do
     log "IPv6: $i"
 done
 
+# Make sure our arrays have at least one element.
+if [ "${#ipv4[@]}" -lt 1 ]; then
+    log "Found IPv4 array empty. Aborting..."
+
+    exit 1
+fi
+
+if [ "${#ipv6[@]}" -lt 1 ]; then
+    log "Found IPv6 array empty. Aborting..."
+
+    exit 1
+fi
+
 # Retrieve current date.
 dateSimple=$(date +"%Y-%m-%d-%H-%M")
 dateMore=$(date +"%Y-%m-%d %H:%M:%S")
