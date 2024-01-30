@@ -39,7 +39,7 @@ dateSimple=$(date +"%Y-%m-%d-%H-%M")
 dateMore=$(date +"%Y-%m-%d %H:%M:%S")
 
 # Attempt to make backup directory.
-mkdir -p $BACKUP_DIR
+mkdir -p $BACKUP_DIR/
 
 # IPTables.
 if [ "$IPTABLES_ENABLED" -eq 1 ]; then
