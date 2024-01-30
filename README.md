@@ -182,3 +182,4 @@ ACCEPT     tcp  --  2c0f:f248::/32       anywhere             ctstate NEW,ESTABL
 
 ## Credits
 * [Christian Deacon](https://github.com/gamemann)
+* Carlooosdev - Added better logging functionality (PR #[1](https://github.com/gamemann/cf-nginx-iptables-automation/pull/1))
