@@ -3,7 +3,7 @@ This is a small, but neat Bash script that updates [NGINX](https://www.nginx.com
 Additionally, I've added backup and restoring options plus more!
 
 ## Installation
-While these scripts automate the list of CloudFlare IP ranges, there are a few steps required before using it.
+While this script automates most of the process, there are a few steps required before using it.
 
 ### Cron Job & Script Execution
 It's best to utilize cron jobs to automatically execute this script. In the cron job below, we update the list *every day at 2:30 AM*. However, you may alter the schedule. I would recommend using a cron job generator such as [this](https://crontab.guru/) if you want to change the schedule.
@@ -63,7 +63,7 @@ iptables -A INPUT -m conntrack --ctstate INVALID -j DROP
 iptables -A INPUT -p tcp -m multiport --dports 80,443 -j cloudflare
 ```
 
-I would recommend setting the `INPUT` chain's policy to `ACCEPT` while testing and then setting it to `DROP` when you're sure things are working. This way your firewall will actually be utilized (dropping packets at the end of the `INPUT` chain that don't match).
+I would recommend setting the `INPUT` chain's policy to `ACCEPT` while testing and then setting it to `DROP` when you're absolutely sure things are working. This way your firewall will actually be utilized (dropping packets at the end of the `INPUT` chain that don't match).
 
 ```bash
 # Set default policy to ACCEPT for `INPUT` chain.
@@ -72,6 +72,8 @@ iptables -P INPUT ACCEPT
 # Set default policy to DROP for `INPUT` chain.
 iptables -P INPUT DROP
 ```
+
+**Warning** - If your IPTables rules are incorrectly setup and you set the `INPUT` default policy to `DROP`, it's possible you will lose connection to your server! I would recommend making sure you have access outside of the server's network before performing the above commands!
 
 ## Configuration
 You may configure settings at the top of the Bash script. Here are the current variables/settings that can be modified.
@@ -132,7 +134,7 @@ set_real_ip_from 2c0f:f248::/32;
 real_ip_header CF-Connecting-IP;
 ```
 
-This allows a web application to utilize the user's real IP address instead of the IPs from the CloudFlare via proxying.
+This allows a web application to utilize the user's real IP address instead of the IPs from CloudFlare's proxy servers.
 
 ### IPTables
 A rule for each CloudFlare IP range is added to a chain (`$IPTABLES_CHAIN`) with the IP/range as the source, `80` and `443` as the destination ports, and `TCP` for the network protocol. These are the typical web ports used when proxying traffic through CloudFlare. With that said, we only match on new or established connections.
