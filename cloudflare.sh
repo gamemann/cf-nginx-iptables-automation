@@ -5,16 +5,16 @@ BACKUP_DIR=./backups
 # NGINX Configuration
 NGINX_ENABLED=1
 NGINX_RELOAD=0                          # Reloads NGINX after update if test is successful.
-NGINX_BACKUP=1                          # Backups the current config to $NGINX_FILE, but $dateSimple.bckup is appended.
+NGINX_BACKUP=1                          # Backups the current config to $BACKUP_DIR/$dateSimple.bak is appended.
 NGINX_RESTORE=1                         # If NGINX test fails, will attempt to restore file.
 NGINX_FILE=/etc/nginx/cloudflare.conf   # Path to the file to output CloudFlare configuration to. This should be the file included in your NGINX config.
 
 # IPTables Configuration
 IPTABLES_ENABLED=1
-IPTABLES_CHAIN=cloudflare
+IPTABLES_CHAIN=cloudflare               # The name of the IPTables chain to add IP rules to.
 IPTABLES_BACKUP=1                       # Backups output of `iptables-save`. 
-IPTABLES_SAVE=1                         # Executes `netfilter-persistent save` when finished. You must have `iptables-persistent` package installed.
-IPTABLES_MODE=0                         # Which mode to use. 0 = Flushes chain and readds all rules. > 0 = Scans output of `iptables -L <chain>` and if the IP range doesn't exist, it adds it.
+IPTABLES_SAVE=1                         # Executes `netfilter-persistent save` when finished. You must have `iptables-persistent` package installed or something similar.
+IPTABLES_MODE=0                         # Which mode to use. 0 = Flushes chain and re-adds all rules. > 0 = Scans output of `iptables -L <chain>` and if the IP range doesn't exist, adds it.
 
 # Logging Configuration
 LOG_DIR=./logs
@@ -193,7 +193,7 @@ if [ "$NGINX_ENABLED" -eq 1 ]; then
         if [ "$NGINX_RESTORE" -eq 1 ]; then
             log "[NGINX] Restoring from backup..."
 
-            cp -f "$backupFile" "$NGINX_FILE"
+            cp -f "$BACKUP_DIR/$backupFile" "$NGINX_FILE"
 
             log "[NGINX] Restored backup '$backupFile'. Testing again..."
 
@@ -205,12 +205,12 @@ if [ "$NGINX_ENABLED" -eq 1 ]; then
             else
                 log "[NGINX] Restore and test successful!"
             fi
-        else
-            # Check if we should reload NGINX.
-            if [ "$NGINX_RELOAD" -eq 1 ]; then
-                log "[NGINX] Reloading NGINX server..."
-                systemctl reload nginx
-            fi
+        fi
+    else
+        # Check if we should reload NGINX.
+        if [ "$NGINX_RELOAD" -eq 1 ]; then
+            log "[NGINX] Reloading NGINX server..."
+            systemctl reload nginx
         fi
     fi
 fi
