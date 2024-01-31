@@ -1,9 +1,11 @@
-This is a small, but neat Bash script that updates [NGINX](https://www.nginx.com/) (real visitor IP) and [IPTables](https://en.wikipedia.org/wiki/Iptables) with an up-to-date list of [CloudFlare](https://www.cloudflare.com/) IPv4/IPv6 ranges.
+This is a small, but neat Bash script that updates [NGINX](https://www.nginx.com/) (real visitor IP) and an [IPTables'](https://en.wikipedia.org/wiki/Iptables) chain with an up-to-date list of [CloudFlare](https://www.cloudflare.com/) IPv4 and IPv6 ranges. This is useful for users who host websites proxied through CloudFlare to hide the direct web server's IP address from the public, but want to automate the process of keeping the CloudFlare IP ranges up-to-date.
 
-Additionally, I've added backup and restoring options plus more!
+If you're hosting a website proxied through CloudFlare, it is recommended that you utilize a firewall such as IPTables to add rules onto the web server to only allow CloudFlare IP ranges on web traffic ports (e.g. `TCP/80` and `TCP/443`) so that users including bots cannot perform port scans and crawl your web server via direct IP. This is where this script comes in handy! With that said, it supports NGINX configuration that'll allow your web applications to retrieve your non-proxied client IP addresses instead of IPs from the CloudFlare proxy servers.
+
+Additionally, I've added testing, backup, and restoring options plus more!
 
 ## Installation
-While this script automates most of the process, there are a few steps required before using it.
+While this script automates most of the process, there are a few initial steps required before using it.
 
 ### Cron Job & Script Execution
 It's best to utilize cron jobs to automatically execute this script. In the cron job below, we update the list *every day at 2:30 AM*. However, you may alter the schedule. I would recommend using a cron job generator such as [this](https://crontab.guru/) if you want to change the schedule.
@@ -13,6 +15,10 @@ Since this script should be executed as **root** (or via `sudo`), I recommend ed
 Here's a cron job that executes `/root/cf-nginx-iptables-automation/cloudflare.sh` assuming this is the path to the script file.
 
 ```bash
+# Set $PATH so that the cron job doesn't need absolute paths for each binary.
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# Cron Job
 30 2 * * * /root/cf-nginx-iptables-automation/cloudflare.sh >/dev/null 2>&1
 ```
 
@@ -34,15 +40,15 @@ http {
 
 Afterwards, you may test the configuration with `nginx -t` and reload NGINX with `systemctl reload nginx` (the script has options to do this automatically!).
 
-**Note** - Depending on your Linux distro/OS, you may be able to set `$NGINX_FILE` to something like `/etc/nginx/conf.d/cloudflare.conf` and the steps above wouldn't be needed since `/etc/nginx/conf.d/*.conf` is already included in the main NGINX config. I decided to use another path outside of `conf.d/` since some Linux distros have different file structures for NGINX that don't include `conf.d/`.
+**Note** - Depending on your Linux distro/OS, you may be able to set `$NGINX_FILE` to something like `/etc/nginx/conf.d/cloudflare.conf` and the steps above wouldn't be needed since `/etc/nginx/conf.d/*.conf` is already included in the main NGINX config. I decided to use another path outside of `conf.d/` since some Linux distros have different file structures for NGINX that doesn't include the `conf.d/` directory.
 
 ### IPTables
-This script automates the creation and updating of the chain `$IPTABLES_CHAIN`. However, it does not utilize the chain anywhere in the built-in chains such as `INPUT`.
+This script automates the creation and updating of the chain `$IPTABLES_CHAIN`. However, it does not automatically utilize the chain anywhere in the built-in chains such as `INPUT`.
 
 My recommendation is to add a jump to the chain `$IPTABLES_CHAIN` inside of the `INPUT` built-in chain. You can use the following command.
 
 ```bash
-iptables -A INPUT -p tcp -m multiport --dports 80,443 -j cloudflare
+iptables -A INPUT -j cloudflare
 ```
 
 You may need to replace `cloudflare` with the chain name you want to use if different (`$IPTABLES_CHAIN`).
@@ -60,16 +66,16 @@ iptables -A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
 iptables -A INPUT -m conntrack --ctstate INVALID -j DROP
 
 # Jump to our CloudFlare chain if we're using network protocol `TCP` on destination ports 80 and 443.
-iptables -A INPUT -p tcp -m multiport --dports 80,443 -j cloudflare
+iptables -A INPUT -j cloudflare
 ```
 
-I would recommend setting the `INPUT` chain's policy to `ACCEPT` while testing and then setting it to `DROP` when you're absolutely sure things are working. This way your firewall will actually be utilized (dropping packets at the end of the `INPUT` chain that don't match).
+I would recommend setting the `INPUT` chain's policy to `ACCEPT` while testing and then setting it to `DROP` when you're absolutely sure things are working. This way your firewall will be utilized properly by dropping packets at the end of the `INPUT` chain that don't match.
 
 ```bash
-# Set default policy to ACCEPT for `INPUT` chain.
+# Set default policy to ACCEPT for `INPUT` chain. This allows all packets in `INPUT` chain unless if matched against a non-accept rule.
 iptables -P INPUT ACCEPT
 
-# Set default policy to DROP for `INPUT` chain.
+# Set default policy to DROP for `INPUT` chain. This drops all traffic that match no rules in the `INPUT` chain.
 iptables -P INPUT DROP
 ```
 
